@@ -1,0 +1,19 @@
+%%%-------------------------------------------------------------------
+%%% @author jstypka
+%%% @copyright (C) 2014, <COMPANY>
+%%% @doc
+%%%
+%%% @end
+%%% Created : 15. paź 2014 17:38
+%%%-------------------------------------------------------------------
+{application, labs_ops, [
+    {description, "Labs operators for the EMAS algorithm"},
+    {vsn, "0.1"},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        emas
+    ]},
+    {env, []}
+]}.

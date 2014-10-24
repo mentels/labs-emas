@@ -1,0 +1,11 @@
+/.project
+.rebar
+/.settings
+*.beam
+*.so
+*.o
+deps
+
+.idea
+*.iml
+/ebin/
