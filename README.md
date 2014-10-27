@@ -38,15 +38,15 @@ which will compile the sources and start the Erlang VM with appropriate flags.
 
 To run the application you can type:
 
-    1> emas:start(mas_concurrent, 10000, [{genetic_ops, labs_ops}]).
+    1> emas:start(mas_concurrent, 10000, [{genetic_ops, labs_ops}, {problem_size, 30}]).
   
-which will start the algorithm. The word `emas` is the name of the main module of our usecase. The atom `mas_concurrent` defines the version of the program which will be used to execute the program. Currently you can choose from `mas_concurrent`, `mas_hybrid`, `mas_skel` and `mas_sequential` versions.
+which will start the algorithm. The word `emas` is the name of the main module of our usecase. The atom `mas_concurrent` defines the version of the program which will be used to execute the program. Currently you can choose from `mas_concurrent`, `mas_hybrid`, `mas_skel` and `mas_sequential` versions. The default problem size for `emas` is 100 and computing fitnesses for initial population can take a long time. When testing `labs_ops` operators appropriate (lower) values of `problem_size` are advised.
 
 The second parameter is the expected time of execution in miliseconds and the third argument is a list of simulation properties that can be redefined from the command line. The default values are stored in `~/deps/mas/etc/emas.config` file and can be freely edited. In this list we include a tuple with a name of the operators module.
 
 Another list can be also provided as a starting argument:
 
-    3> emas:start(mas_concurrent, 10000, [{genetic_ops, labs_ops}], [{islands, 8}]).
+    3> emas:start(mas_concurrent, 10000, [{genetic_ops, labs_ops}, {problem_size, 30}], [{islands, 8}]).
     
 which overwrites the parameters of the MAS framework. The list of properties and their default values can be found in the `~/deps/mas/etc/mas.config` file and can be freely edited as well.
 
