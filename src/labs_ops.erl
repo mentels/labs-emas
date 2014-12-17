@@ -102,6 +102,24 @@ best_flipped(Solution) ->
               end,
     lists:foldl(GetBest, InitAcc, FlippedSols).
 
+%% Random Mutation Hill Climbing
+rhmc(Solution) ->
+    MaxIterations = 15,
+    rhmc(MaxIterations, Solution, energy(Solution)).
+
+rhmc(0, Solution, Evaluation) ->
+    {Solution, Evaluation};
+rhmc(RemainingSteps, Solution, Evaluation) ->
+    {RandomSol, RandomEval} = random_flipped(Solution),
+    case RandomEval > Evaluation of
+        true -> rhmc(RemainingSteps-1, RandomSol, RandomEval);
+        _ -> rhmc(RemainingSteps-1, Solution, Evaluation)
+    end.
+
+random_flipped(Solution0) ->
+    Solution1 = flip_nth(Solution0, random:uniform(length(Solution0))),
+    {Solution1, energy(Solution1)}.
+
 flip_nth(Sol, N) ->
     flip_nth(Sol, [], N).
 
