@@ -17,7 +17,7 @@ solution(SP) ->
 %% @doc Evaluates a given solution. Higher is better.
 -spec evaluation(solution(), sim_params()) -> float().
 evaluation(Solution, _SP) ->
-    local_search(Solution).
+    sdls(Solution).
 
 -spec energy(solution()) -> float().
 energy(Solution) ->
@@ -72,19 +72,20 @@ dot(_, _) -> -1.
 
 fnot(X) -> -X + 1.
 
--spec local_search(solution()) -> float().
-local_search(Solution) ->
+%% Steepest Descent Local Search
+-spec sdls(solution()) -> float().
+sdls(Solution) ->
     MaxIterations = 15,
-    {_Sol, Eval} = local_search(MaxIterations, Solution, energy(Solution)),
+    {_Sol, Eval} = sdls(MaxIterations, Solution, energy(Solution)),
     Eval.
 
--spec local_search(integer(), solution(), float()) -> {solution(), float()}.
-local_search(0, Solution, Evaluation) ->
+-spec sdls(integer(), solution(), float()) -> {solution(), float()}.
+sdls(0, Solution, Evaluation) ->
     {Solution, Evaluation};
-local_search(RemainingSteps, Solution, Evaluation) ->
+sdls(RemainingSteps, Solution, Evaluation) ->
     {BestSol, BestEval} = best_flipped(Solution),
     case BestEval > Evaluation of
-        true -> local_search(RemainingSteps-1, BestSol, BestEval);
+        true -> sdls(RemainingSteps-1, BestSol, BestEval);
         _ -> {Solution, Evaluation}
     end.
 
