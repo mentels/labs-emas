@@ -1,23 +1,28 @@
 -module (labs_ops).
 -behaviour (emas_genetic_ops).
 -export ([solution/1, evaluation/2, mutation/2, recombination/3]).
+-export ([sdls/2, rhmc/2, default_mem/2]).
 
 -include_lib("emas/include/emas.hrl").
 
 -type sim_params() :: emas:sim_params().
 -type solution() :: emas:solution([0 | 1]).
 
+-define(AVAILABLE_MEMETICS, [default_mem, rhmc, sdls]).
+-define(DEFAULT_MEMETICS, default_mem).
 
 %% @doc Generates a random solution.
 -spec solution(sim_params()) -> solution().
 solution(SP) ->
+    check_memetics(SP#sim_params.genetic_ops_opts),
     [random:uniform(2)-1 || _ <- lists:seq(1, SP#sim_params.problem_size)].
 
 
 %% @doc Evaluates a given solution. Higher is better.
 -spec evaluation(solution(), sim_params()) -> float().
-evaluation(Solution, _SP) ->
-    sdls(Solution).
+evaluation(Solution, SP) ->
+    {_Sol, Eval} = apply_memetic(mem_evaluation, Solution, SP),
+    Eval.
 
 -spec energy(solution()) -> float().
 energy(Solution) ->
@@ -46,7 +51,8 @@ recombination_features(F1, F2) ->
 %% @doc Reproduction function for a single agent (mutation only).
 -spec mutation(solution(), sim_params()) -> solution().
 mutation(Solution, SP) ->
-    random_mutation(Solution, SP#sim_params.mutation_rate).
+    {Sol, _Eval} = apply_memetic(mem_mutation, Solution, SP),
+    Sol.
 
 %% internal functions
 
@@ -67,20 +73,36 @@ dot(_, _) -> -1.
 
 fnot(X) -> -X + 1.
 
-random_mutation(Solution, Rate) ->
-    lists:map(fun(X) ->
-                      case random:uniform() < Rate of
-                          true -> fnot(X);
-                          _ -> X
-                      end
-              end, Solution).
+check_memetics(GeneticOpsOpts) ->
+    [begin
+         Mem = proplists:get_value(Type, GeneticOpsOpts, ?DEFAULT_MEMETICS),
+         case lists:member(Mem, ?AVAILABLE_MEMETICS) of
+             false ->
+                 erlang:error({unknown_memetic, Type, Mem});
+             true ->
+                 ok
+         end
+     end || Type <- [mem_evaluation, mem_mutation]].
+
+apply_memetic(Type, Solution, SP) ->
+    EvalMem = proplists:get_value(Type, SP#sim_params.genetic_ops_opts,
+                                  ?DEFAULT_MEMETICS),
+    ?MODULE:EvalMem(Solution, SP).
+
+default_mem(Solution0, #sim_params{mutation_rate = Rate}) ->
+    Solution1 = lists:map(fun(X) ->
+                                  case random:uniform() < Rate of
+                                      true -> fnot(X);
+                                      _ -> X
+                                  end
+                          end, Solution0),
+    {Solution1, energy(Solution1)}.
 
 %% Steepest Descent Local Search
--spec sdls(solution()) -> float().
-sdls(Solution) ->
+-spec sdls(solution(), sim_params()) -> float().
+sdls(Solution, _SP) ->
     MaxIterations = 15,
-    {_Sol, Eval} = sdls(MaxIterations, Solution, energy(Solution)),
-    Eval.
+    sdls(MaxIterations, Solution, energy(Solution)).
 
 -spec sdls(integer(), solution(), float()) -> {solution(), float()}.
 sdls(0, Solution, Evaluation) ->
@@ -107,7 +129,7 @@ best_flipped(Solution) ->
     lists:foldl(GetBest, InitAcc, FlippedSols).
 
 %% Random Mutation Hill Climbing
-rhmc(Solution) ->
+rhmc(Solution, _SP) ->
     MaxIterations = 15,
     rhmc(MaxIterations, Solution, energy(Solution)).
 
