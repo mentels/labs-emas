@@ -46,12 +46,7 @@ recombination_features(F1, F2) ->
 %% @doc Reproduction function for a single agent (mutation only).
 -spec mutation(solution(), sim_params()) -> solution().
 mutation(Solution, SP) ->
-    lists:map(fun(X) ->
-                      case random:uniform() < SP#sim_params.mutation_rate of
-                          true -> fnot(X);
-                          _ -> X
-                      end
-              end, Solution).
+    random_mutation(Solution, SP#sim_params.mutation_rate).
 
 %% internal functions
 
@@ -71,6 +66,14 @@ dot(X, X) -> 1;
 dot(_, _) -> -1.
 
 fnot(X) -> -X + 1.
+
+random_mutation(Solution, Rate) ->
+    lists:map(fun(X) ->
+                      case random:uniform() < Rate of
+                          true -> fnot(X);
+                          _ -> X
+                      end
+              end, Solution).
 
 %% Steepest Descent Local Search
 -spec sdls(solution()) -> float().
