@@ -1,15 +1,16 @@
 -module (labs_ops).
 -behaviour (emas_genetic_ops).
 -export ([solution/1, evaluation/2, mutation/2, recombination/3]).
--export ([sdls/2, rhmc/2, default_mem/2]).
+-export ([sdls/2, rhmc/2, tabu/2, default_mem/2]).
 
 -include_lib("emas/include/emas.hrl").
 
 -type sim_params() :: emas:sim_params().
 -type solution() :: emas:solution([0 | 1]).
 
--define(AVAILABLE_MEMETICS, [default_mem, rhmc, sdls]).
+-define(AVAILABLE_MEMETICS, [default_mem, rhmc, sdls, tabu]).
 -define(DEFAULT_MEMETICS, default_mem).
+-define(TABU_ITERATIONS, 15).
 
 %% @doc Generates a random solution.
 -spec solution(sim_params()) -> solution().
@@ -145,6 +146,49 @@ rhmc(RemainingSteps, Solution, Evaluation) ->
 random_flipped(Solution0) ->
     Solution1 = flip_nth(Solution0, random:uniform(length(Solution0))),
     {Solution1, energy(Solution1)}.
+
+tabu(Solution, _SP) ->
+    MaxIterations = 15,
+    Tabu = maps:new(),
+    tabu(MaxIterations, Solution, energy(Solution), Tabu).
+
+tabu(0, Solution, Evaluation, _Tabu) ->
+    {Solution, Evaluation};
+tabu(RemainingSteps, Solution, Evaluation, Tabu0) ->
+    {BestSol, BestEval, Tabu1} = best_flipped_with_tabu(Solution, Tabu0),
+    case BestEval > Evaluation of
+        true -> tabu(RemainingSteps-1, BestSol, BestEval, Tabu1);
+        _ -> {Solution, Evaluation}
+    end.
+
+
+best_flipped_with_tabu(Solution, Tabu0) ->
+    FlipFun = fun (I, AccTabu) ->
+                      case maps:find(I, AccTabu) of
+                          {ok, 1} ->
+                              {Solution,
+                               maps:remove(I, AccTabu)};
+                          {ok, Val} ->
+                              {Solution,
+                               maps:update(I, Val - 1, AccTabu)};
+                          error ->
+                              {flip_nth(Solution, I),
+                               maps:put(I, ?TABU_ITERATIONS, AccTabu)}
+                      end
+              end,
+    {FlippedSols, Tabu1} = lists:mapfoldl(FlipFun, Tabu0,
+                                          lists:seq(1, length(Solution))),
+    First = hd(FlippedSols),
+    InitAcc = {First, energy(First)},
+    GetBest = fun (S, {AccSol, AccE}) ->
+                      E = energy(S),
+                      case E > AccE of
+                          true -> {S, E};
+                          _ -> {AccSol, AccE}
+                      end
+              end,
+    {BestSol, BestEval} = lists:foldl(GetBest, InitAcc, FlippedSols),
+    {BestSol, BestEval, Tabu1}.
 
 flip_nth(Sol, N) ->
     flip_nth(Sol, [], N).
